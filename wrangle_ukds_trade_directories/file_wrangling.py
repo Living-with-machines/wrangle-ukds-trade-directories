@@ -24,13 +24,29 @@ def get_files(input: Path, kind: str = "pdf", fullname: str = "", key=None):
 
 
 def _sort_pdf(*args, **kwargs):
+    """Returns a correct path for sorted PDF files."""
     if isinstance(kwargs["file"], str):
         kwargs["file"] = Path(kwargs["file"])
     name = kwargs["file"].stem.upper() + kwargs["file"].suffix.lower()
     return kwargs["output"] / f"{kwargs['kind']}/{name}"
 
 
+def _sort_jpg(*args, **kwargs):
+    """Returns a correct path for sorted JPG files."""
+    if isinstance(kwargs["file"], str):
+        kwargs["file"] = Path(kwargs["file"])
+    name = kwargs["file"].name
+    parts = name.split("_")
+    parent = parts[1].upper()
+    name = parts[0] + "_" + parent + ".jpg"
+    Path(kwargs["output"] / f"{kwargs['kind']}/{parent}").mkdir(
+        parents=True, exist_ok=True
+    )
+    return kwargs["output"] / f"{kwargs['kind']}/{parent}/{name}"
+
+
 def _sort_txt(*args, **kwargs):
+    """Returns a correct path for sorted text files."""
     if isinstance(kwargs["file"], str):
         kwargs["file"] = Path(kwargs["file"])
     name = kwargs["file"].name.lower()
@@ -40,7 +56,9 @@ def _sort_txt(*args, **kwargs):
     # Path(name).mkdir(parents=True, exist_ok=True)
     return kwargs["output"] / f"{kwargs['kind']}/{parent}/{name}"
 
+
 def _sort_tif(*args, **kwargs):
+    """Returns a correct path for sorted TIFF files."""
     if isinstance(kwargs["file"], str):
         kwargs["file"] = Path(kwargs["file"])
     name = kwargs["file"].name

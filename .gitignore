@@ -6,3 +6,4 @@ files
 log.md
 poetry.lock
 test.py
+*.ipynb

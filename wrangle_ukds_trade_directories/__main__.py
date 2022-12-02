@@ -6,6 +6,7 @@ from .file_wrangling import (
     _sort_pdf,
     _sort_txt,
     _sort_tif,
+    _sort_jpg,
     get_files,
 )
 from .log import log
@@ -16,6 +17,8 @@ import pandas as pd
 import fitz
 import re
 from pathlib import Path
+from PIL import Image
+from rich.progress import track
 
 
 @click.command(name=__app_name__)
@@ -37,7 +40,8 @@ from pathlib import Path
     prompt="Metadata (CSV file)",
     help="The path to the CSV file with corresponding metadata.",
 )
-def main(input, output, metadata):
+@click.option("--types", type=str, default=["pdf", "tif", "png"], multiple=True)
+def main(input, output, metadata, types):
     """Simple app that wrangles the UKDS Trade Directories data folder."""
 
     # Ensure input, output are the correct type
@@ -46,7 +50,6 @@ def main(input, output, metadata):
     # 1. Consolidate files
 
     # 1a. PDF guides
-
     pdf_guides = get_files(
         input,
         fullname="guide.pdf",
@@ -55,7 +58,6 @@ def main(input, output, metadata):
     consolidate_guides(pdf_guides, input, output, kind="pdf")
 
     # 1b. HTML guides
-
     html_guides = get_files(
         input,
         fullname="*Information.htm",
@@ -64,28 +66,42 @@ def main(input, output, metadata):
     consolidate_guides(html_guides, input, output, kind="html")
 
     # 1c. PDF files
-    pdf_files = get_files(input, kind="pdf")
-    consolidate_files(
-        pdf_files.values(), input, output, kind="pdf", sorter_func=_sort_pdf
-    )
+    if "pdf" in types:
+        pdf_files = get_files(input, kind="pdf")
+        consolidate_files(
+            pdf_files.values(), input, output, kind="pdf", sorter_func=_sort_pdf
+        )
 
     # 1d. text files
-    txt_files = get_files(input, kind="TXT")
-    consolidate_files(
-        txt_files.values(), input, output, kind="txt", sorter_func=_sort_txt
-    )
+    if "txt" in types:
+        txt_files = get_files(input, kind="TXT")
+        consolidate_files(
+            txt_files.values(), input, output, kind="txt", sorter_func=_sort_txt
+        )
 
-    # 1d. tiff files
-    txt_files = get_files(input, kind="tif")
-    consolidate_files(
-        txt_files.values(), input, output, kind="tif", sorter_func=_sort_tif
-    )
+    # 1e. tiff files
+    if "tif" in types:
+        tif_files = get_files(input, kind="tif")
+        consolidate_files(
+            tif_files.values(), input, output, kind="tif", sorter_func=_sort_tif
+        )
+
+    # 1f. jpeg files
+    if "jpg" in types:
+        tif_files = get_files(input, kind="tif")
+        for file in track(tif_files.values()):
+            output_file = _sort_jpg(file=file, kind="jpg", output=output)
+            if Path(output_file).exists():
+                continue
+            im = Image.open(input / file.lstrip("/"))
+            im.save(output_file, "JPEG", quality=50)
 
     # Add the log
     log(
         {
             "txt_files": txt_files,
             "pdf_files": pdf_files,
+            "tif_files": tif_files,
             "html_guides": html_guides,
             "pdf_guides": pdf_guides,
         }
@@ -178,10 +194,15 @@ def main(input, output, metadata):
         df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
         df.to_csv(csv_doc)
 
-    df = pd.concat(
-        [pd.read_csv(f) for f in Path(output).glob("**/*.csv")], ignore_index=True
-    )
-    df.to_csv(output / "concatenated.csv")
+    csvs = [
+        pd.read_csv(f) for f in Path(output).glob("**/*.csv") if f.stat().st_size > 0
+    ]
+    if csvs:
+        df = pd.concat(
+            csvs,
+            ignore_index=True,
+        )
+        df.to_csv(output / "concatenated.csv")
 
     # TODO: continue working on processing metadata (in notebook...)
     df = pd.read_csv(metadata)
