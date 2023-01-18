@@ -1,6 +1,6 @@
 # Wrangle UKDS Trade Directories
 
-Code in this repository can be used to consolidate UKDS Trade Directories and metadata into a better file structure in advance of a workshop in December 2022.
+Code in this repository can be used to consolidate [UK Data Service's Trade Directories and metadata](https://beta.ukdataservice.ac.uk/datacatalogue/studies/study?id=5124) into a better file structure in advance of a workshop in December 2022.
 
 ## Installation
 
