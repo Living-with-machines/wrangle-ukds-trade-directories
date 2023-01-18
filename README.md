@@ -12,7 +12,7 @@ Then, in this repository, run:
 $ poetry install
 ```
 
-## How to run
+## How to run
 
 Enter the Poetry shell:
 
